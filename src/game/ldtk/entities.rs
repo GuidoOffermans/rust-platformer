@@ -1,9 +1,7 @@
-use std::collections::HashMap;
 use bevy::{prelude::*};
-use ldtk_rust::{Definitions, EntityDefinition, EntityInstance, Project, TileInstance};
+use ldtk_rust::{Definitions, EntityInstance};
 
-use crate::ldtk::{LayerInfo, TILE_SCALE, VisualAssets};
-use crate::ldtk::helpers;
+use crate::game::ldtk::{LayerInfo, TILE_SCALE, VisualAssets, helpers};
 
 #[derive(Copy, Clone)]
 struct ExtraEntDefs {
@@ -29,7 +27,7 @@ pub fn display_entities(
     entities: &Vec<EntityInstance>,
     definitions: &Definitions,
     layer_info: LayerInfo,
-    visual_assets: VisualAssets
+    visual_assets: VisualAssets,
 ) {
     for entity in entities.iter() {
         let mut extra_ent_defs = ExtraEntDefs::new();
@@ -74,7 +72,7 @@ fn display_entity(
         Some(tileset_entity) => {
             // process tile asset
             let tileset_uid = tileset_entity.tileset_uid as i32;
-            let handle: Handle<TextureAtlas> = visual_assets.spritesheets[&tileset_uid].clone();
+            let handle: Handle<TextureAtlas> = visual_assets.sprite_sheets[&tileset_uid].clone();
 
             commands.spawn().insert_bundle(SpriteSheetBundle {
                 transform: Transform {
@@ -97,7 +95,7 @@ fn display_entity(
         }
         None => {
             // process color shape
-            let handle: Handle<ColorMaterial> = visual_assets.entity_materials[&(entity.def_uid as i32)].clone();
+            let _handle: Handle<ColorMaterial> = visual_assets.entity_materials[&(entity.def_uid as i32)].clone();
             commands
                 .spawn()
                 .insert_bundle(SpriteBundle {

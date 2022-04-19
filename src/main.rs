@@ -1,58 +1,52 @@
 use bevy::{
     prelude::*,
-    render::camera::ScalingMode,
     window::WindowMode,
+    diagnostic::FrameTimeDiagnosticsPlugin,
+    window::PresentMode
 };
 
-mod player;
 mod debug;
-mod ascii;
-mod tilemap;
-mod tiles;
-mod ldtk;
+mod menu;
+mod game;
 
-use crate::ascii::AsciiPlugin;
-use crate::player::PlayerPlugin;
-use crate::debug::DebugPlugin;
-use crate::tilemap::TileMapPlugin;
-use crate::tiles::TilesPlugin;
-use crate::ldtk::LDTKPlugin;
+use crate::menu::MenuPlugin;
+use crate::game::GamePlugin;
 
 pub const RESOLUTION: f32 = 16.0 / 9.0;
-pub const TILE_SIZE: f32 = 2.5;
+pub const TILE_SCALE: f32 = 2.5;
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+enum AppState {
+    Menu,
+    InGame,
+}
 
 fn main() {
     App::new()
-        .insert_resource(Window::new())
+        .insert_resource(Window::new(600.0))
         .add_plugins(DefaultPlugins)
-        .add_plugin(DebugPlugin)
-        .add_plugin(PlayerPlugin)
-        .add_plugin(AsciiPlugin)
-        // .add_plugin(TilesPlugin)
-        .add_plugin(LDTKPlugin)
-        .add_startup_system(spawn_camera)
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_state(AppState::Menu)
+        .add_plugin(MenuPlugin)
+        .add_plugin(GamePlugin)
         .run();
 }
+
+#[derive(Component)]
+pub struct TileCollider;
 
 struct Window {}
 
 impl Window {
-    fn new() -> WindowDescriptor {
-        let height: f32 = 600.0;
+    fn new(height: f32) -> WindowDescriptor {
         WindowDescriptor {
             width: height * RESOLUTION,
             height,
             title: "Platformer".to_string(),
-            vsync: false,
+            present_mode: PresentMode::Mailbox,
             mode: WindowMode::Windowed,
             resizable: false,
             ..Default::default()
         }
     }
-}
-
-fn spawn_camera(mut commands: Commands) {
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform = Transform::from_translation(Vec3::new(0.0, 0.0, 100.0));
-    commands.spawn().insert_bundle(camera);
 }

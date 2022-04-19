@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use bevy::{prelude::*};
 use ldtk_rust::{EntityInstance, Project, TileInstance};
 
-const LDTK_FILE_PATH: &str = "assets/metroid.ldtk";
+const LDTK_FILE_PATH: &str = "assets/metroid2.ldtk";
 const TILE_SCALE: f32 = 2.5;
 
 pub struct TilesPlugin;

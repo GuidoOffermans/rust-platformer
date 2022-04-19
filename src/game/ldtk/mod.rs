@@ -1,12 +1,17 @@
 use std::collections::HashMap;
-use bevy::{prelude::*};
-use ldtk_rust::{EntityInstance, Project, TileInstance};
+use bevy::prelude::*;
 
-mod tiles;
+use ldtk_rust::{Project};
+use crate::AppState;
+
+pub(crate) mod tiles;
 mod entities;
 mod helpers;
+mod int_grid;
 
-const LDTK_FILE_PATH: &str = "assets/metroid.ldtk";
+const LDTK_FILE_PATH: &str = "assets/test.ldtk";
+// const BASE_DIR: &str = "assets/";
+// const PROJECT_FILE: &str = "SeparateLevelFiles.ldtk";
 pub const TILE_SCALE: f32 = 2.5;
 
 pub struct LDTKPlugin;
@@ -14,8 +19,10 @@ pub struct LDTKPlugin;
 impl Plugin for LDTKPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_startup_system(setup.system())
-            .add_system(update.system());
+            .add_system_set(SystemSet::on_enter(AppState::InGame)
+                .with_system(setup))
+            .add_system_set(SystemSet::on_update(AppState::InGame)
+                .with_system(update));
     }
 }
 
@@ -27,12 +34,18 @@ struct Map {
 
 #[derive(Clone)]
 pub struct VisualAssets {
-    int_grid_materials: HashMap<i32, Vec<Handle<ColorMaterial>>>,
-    spritesheets: HashMap<i32, Handle<TextureAtlas>>,
+    int_grid_materials: HashMap<i32, Vec<Color>>,
+    sprite_sheets: HashMap<i32, Handle<TextureAtlas>>,
     entity_materials: HashMap<i32, Handle<ColorMaterial>>,
 }
 
-// storage for layer info as we loop through tiles
+// #[derive(Clone, Copy)]
+// pub struct LevelInfo {
+//     current_level_uid: i64,
+//     current_level_path: Option<String>,
+//     current_level_data: Option<Level>,
+// }
+
 #[derive(Clone, Copy)]
 pub struct LayerInfo {
     grid_width: i32,
@@ -49,6 +62,27 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
+    // let mut current_level_path: Option<String> = None;
+    // let mut current_level_data: Option<Level> = None;
+
+    // let project = Project::load_project(BASE_DIR.to_owned() + PROJECT_FILE);
+
+    // match current_level_path {
+    //     Some(t) => current_level_data = Some(Level::new(BASE_DIR.to_owned() + &t)),
+    //     None => println!("that level ID is not correct."),
+    // };
+
+    // // print some data
+    // match current_level_data {
+    //     Some(t) => println!(
+    //         "Level {} has {} layer instaces.",
+    //         current_level_uid,
+    //         t.layer_instances.unwrap().len()
+    //     ),
+    //     None => println!("no level data"),
+    // }
+
+
     let map = Map {
         ldtk_file: Project::new(LDTK_FILE_PATH.to_string()),
         redraw: true,
@@ -57,7 +91,7 @@ fn setup(
 
     let mut visual_assets = VisualAssets {
         int_grid_materials: HashMap::new(),
-        spritesheets: HashMap::new(),
+        sprite_sheets: HashMap::new(),
         entity_materials: HashMap::new(),
     };
 
@@ -74,8 +108,38 @@ fn setup(
 
         let texture_atlas_handle = texture_atlases.add(texture_atlas);
         visual_assets
-            .spritesheets
+            .sprite_sheets
             .insert(tileset.uid as i32, texture_atlas_handle);
+    }
+
+    for layer in map
+        .ldtk_file
+        .defs
+        .layers
+        .iter()
+        .filter(|f| match f.purple_type {
+            ldtk_rust::Type::IntGrid => true,
+            _ => false,
+        })
+    {
+        let mut colors = Vec::new();
+        colors.push(Color::rgba(0.0, 0.0, 0.0, 0.0));
+
+        for i in layer.int_grid_values.iter() {
+            println!("I: {}, C: {}", i.value, i.color);
+            let clr = match Color::hex(&i.color[1..]) {
+                Ok(t) => t,
+                Err(e) => {
+                    println!("Error: {:?}", e);
+                    Color::BLUE
+                }
+            };
+            colors.push(clr);
+        }
+        println!("Colors: {:?}", colors);
+        visual_assets
+            .int_grid_materials
+            .insert(layer.uid as i32, colors);
     }
 
     // Load enities.
@@ -131,7 +195,7 @@ fn update(
             px_width: layer.c_wid as f32 * (layer.grid_size as f32 * TILE_SCALE),
             px_height: layer.c_hei as f32 * (layer.grid_size as f32 * TILE_SCALE),
         };
-
+        println!("Layer: {:?}", layer_uid);
         match &layer.layer_instance_type[..] {
             "Tiles" => {
                 println!("Generating Tile Layer: {}", layer.identifier);
@@ -139,7 +203,16 @@ fn update(
                     &mut commands,
                     layer_info,
                     &layer.grid_tiles,
-                    visual_assets.spritesheets[&tileset_uid].clone(),
+                    visual_assets.sprite_sheets[&tileset_uid].clone(),
+                );
+            }
+            "IntGrid" => {
+                println!("Generating IntGrid Layer: {}", layer.identifier);
+                int_grid::handle_int_grid(
+                    &mut commands,
+                    layer_info,
+                    layer.int_grid_csv.clone(),
+                    visual_assets.int_grid_materials[&layer_uid].clone(),
                 );
             }
             "Entities" => {
@@ -149,7 +222,7 @@ fn update(
                     &layer.entity_instances,
                     &map.ldtk_file.defs,
                     layer_info,
-                    visual_assets.clone()
+                    visual_assets.clone(),
                 );
             }
             _ => {

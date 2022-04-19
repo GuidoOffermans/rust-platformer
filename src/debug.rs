@@ -1,12 +1,9 @@
 use bevy::{
-    core::FixedTimestep,
     prelude::*,
-    utils::Duration,
-    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
 };
-use bevy_inspector_egui::{RegisterInspectable, WorldInspectorPlugin};
 
-use crate::player::Player;
+use crate::AppState;
 
 pub struct DebugPlugin;
 
@@ -14,11 +11,10 @@ impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
         if cfg!(debug_assertions) {
             app
-                .add_plugin(FrameTimeDiagnosticsPlugin::default())
-                .add_plugin(WorldInspectorPlugin::new())
-                .register_inspectable::<Player>()
-                .add_startup_system(setup)
-                .add_system(counter_system);
+                .add_system_set(SystemSet::on_enter(AppState::InGame)
+                    .with_system(setup))
+                .add_system_set(SystemSet::on_update(AppState::InGame)
+                    .with_system(counter_system));
         }
     }
 }

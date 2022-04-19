@@ -1,0 +1,11 @@
+{
+	"x": 0,
+	"y": 0,
+	"width": 768,
+	"height": 256,
+	"iid": "46f30b10-b4d0-11ec-825e-f17e702ecef9",
+	"layers": [
+		"tiles.png"
+	],
+	"entities" : {}
+}

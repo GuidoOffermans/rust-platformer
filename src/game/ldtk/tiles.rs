@@ -1,9 +1,8 @@
-use std::collections::HashMap;
 use bevy::{prelude::*};
-use ldtk_rust::{EntityInstance, Project, TileInstance};
 
-use crate::ldtk::{LayerInfo, TILE_SCALE};
-use crate::ldtk::helpers;
+use ldtk_rust::{TileInstance};
+
+use crate::game::ldtk::{LayerInfo, TILE_SCALE, helpers};
 
 pub fn display_tiles(
     commands: &mut Commands,
@@ -26,7 +25,7 @@ pub fn display_tiles(
             _ => (),
         }
 
-        let new_tile = commands.spawn_bundle(SpriteSheetBundle {
+        let new_tile = commands.spawn_bundle( SpriteSheetBundle {
             transform: Transform {
                 translation: helpers::convert_to_world_coordinates(
                     layer_info.px_width,
@@ -44,8 +43,11 @@ pub fn display_tiles(
             texture_atlas: atlas_handle.clone(),
             ..Default::default()
         }).id();
+
         new_tiles.push(new_tile);
     }
+    // commands.spawn_batch(new_tiles);
+
     commands.spawn()
         .insert(Name::new("Map"))
         .insert(Transform::default())
